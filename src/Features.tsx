@@ -44,8 +44,8 @@ const Features: React.FC = () => {
           <li>🔥 Secure authentication with Firebase</li>
           <li>🔒 End-to-end encryption for privacy</li>
           <li>🔍 Powerful search and tagging system</li>
-          <li>📅 Daily prompts to spark creativity</li>
-          <li>🌈 Customizable themes and layouts</li>
+          {/* <li>📅 Daily prompts to spark creativity</li>
+          <li>🌈 Customizable themes and layouts</li> */}
           <li>📊 Analytics to track your introspective journey</li>
         </ul>
 

@@ -4,11 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { auth, googleProvider } from "@/lib/firebase";
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-  signInWithPopup,
-} from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 
 import TopNav from "@/components/top-nav";
 import { Button } from "@/components/ui/button";
@@ -26,7 +22,6 @@ import {
   FormItem,
   FormLabel,
   FormControl,
-  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -34,33 +29,19 @@ import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 const schema = z.object({
-  username: z
-    .string()
-    .min(3, "Must be at least 3 characters")
-    .max(32, "Must be 32 characters or fewer")
-    .regex(/^[a-zA-Z0-9.\-_@$#]+$/, {
-      message: "Only a-z A-Z 0-9 . - _ @ $ # are allowed",
-    }),
   email: z.string().email("Invalid email"),
-  password: z
-    .string()
-    .min(8, "Must be at least 8 characters")
-    .max(32, "Must be 32 characters or fewer")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,32}$/,
-      "Needs 1 upper, 1 lower, 1 number & 1 special char"
-    ),
+  password: z.string().min(1, "Password required"),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-const GetStarted: React.FC = () => {
+const SignIn: React.FC = () => {
   const [showPwd, setShowPwd] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    mode: "onChange", // validate as the user types
-    defaultValues: { username: "", email: "", password: "" },
+    mode: "onChange",
+    defaultValues: { email: "", password: "" },
   });
 
   const {
@@ -68,27 +49,29 @@ const GetStarted: React.FC = () => {
     formState: { isSubmitting, isValid },
   } = form;
 
-  const onSubmit = async ({ email, password, username }: FormValues) => {
+  const onSubmit = async ({ email, password }: FormValues) => {
     try {
-      const { user } = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success(
+        "Successfully signed in! Redirecting to your journal's home page...",
+        {
+          duration: 3000,
+          onDismiss: () => {
+            window.location.href = "/app/home";
+          },
+        }
       );
-      await updateProfile(user, { displayName: username });
-      toast.success(`Account created successfully! Welcome, ${username}!`, {
-        duration: 5000,
-        description: "You can now sign in with your new account.",
-      });
     } catch (err) {
       toast.error(
-        `Error creating account: ${
+        `Error signing in: ${
           err instanceof Error ? err.message : "Unknown error"
         }`,
         {
           duration: 5000,
-          description:
-            "Please try again or contact support if the issue persists.",
+          action: {
+            label: "Try Again",
+            onClick: () => form.reset(),
+          },
         }
       );
     }
@@ -102,16 +85,16 @@ const GetStarted: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-4xl md:text-6xl font-bold text-blue-darkest dark:text-blue-lightest mb-2">
-              Welcome to JourneyApp!
+              Sign In to JourneyApp
             </CardTitle>
             <CardDescription className="text-xl md:text-2xl text-blue-semi-dark dark:text-blue-lightest mb-2">
-              Your Introspective Journey Begins Here
+              Welcome back!
             </CardDescription>
           </CardHeader>
           <CardContent className="mb-4">
             <p className="max-w-3xl text-lg md:text-xl text-muted-foreground mb-8">
               Organise your thoughts, capture memories, and ignite creativity.
-              Create your account below to get started!
+              Sign in below to continue on your introspective journey!
             </p>
 
             <Form {...form}>
@@ -121,36 +104,15 @@ const GetStarted: React.FC = () => {
               >
                 <FormField
                   control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="skipparoo"
-                          autoComplete="username"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        3–32 chars, letters, numbers, . - _ @ $ #
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type="email"
                           placeholder="you@example.com"
-                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -170,7 +132,6 @@ const GetStarted: React.FC = () => {
                             type={showPwd ? "text" : "password"}
                             {...field}
                             placeholder="••••••••"
-                            autoComplete="new-password"
                           />
                         </FormControl>
 
@@ -190,10 +151,6 @@ const GetStarted: React.FC = () => {
                           )}
                         </Button>
                       </div>
-
-                      <FormDescription>
-                        8–32 chars, incl. upper, lower, number, special
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -202,7 +159,7 @@ const GetStarted: React.FC = () => {
             </Form>
 
             <p className="text-muted-foreground mb-2 mt-4">
-              Or sign up with Google for a quicker start!
+              Or sign in with Google
             </p>
 
             <button
@@ -210,7 +167,7 @@ const GetStarted: React.FC = () => {
               onClick={async () => {
                 try {
                   await signInWithPopup(auth, googleProvider);
-                  toast.success("Signed up with Google!");
+                  toast.success("Signed in with Google!");
                 } catch (e) {
                   // eslint-disable-next-line
                   // @ts-ignore
@@ -251,7 +208,7 @@ const GetStarted: React.FC = () => {
                   className="gsi-material-button-contents"
                   style={{ fontFamily: "Sour_Gummy", fontWeight: "bolder" }}
                 >
-                  Sign up with Google
+                  Sign in with Google
                 </span>
                 <span
                   style={{
@@ -260,7 +217,7 @@ const GetStarted: React.FC = () => {
                     fontWeight: "bolder",
                   }}
                 >
-                  Sign up with Google
+                  Sign in with Google
                 </span>
               </div>
             </button>
@@ -268,13 +225,13 @@ const GetStarted: React.FC = () => {
           <CardFooter className="flex justify-around items-center">
             <div className="flex flex-col items-center">
               <p className="text-muted-foreground mb-2">
-                Already have an account?
+                Don't have an account yet?
               </p>
               <a
-                href="/signin"
+                href="/get-started"
                 className="text-foreground hover:text-blue-semi-dark dark:hover:text-blue-lightest"
               >
-                Sign In here
+                Sign Up here
               </a>
             </div>
             <Button
@@ -286,7 +243,7 @@ const GetStarted: React.FC = () => {
               className="bg-blue-semi-light hover:bg-blue-semi-dark text-white px-12 py-4 text-lg font-semibold shadow-lg"
             >
               <p className="font-bold">
-                {isSubmitting ? "Submitting…" : "Submit"}
+                {isSubmitting ? "Signing In…" : "Sign In"}
               </p>
             </Button>
           </CardFooter>
@@ -296,4 +253,52 @@ const GetStarted: React.FC = () => {
   );
 };
 
-export default GetStarted;
+export default SignIn;
+
+// import React from "react";
+// import { Button } from "./components/ui/button";
+
+// const SignIn: React.FC = () => {
+//   return (
+//     <div className="min-h-screen w-full flex items-center justify-center bg-gray-100">
+//       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+//         <h1 className="text-2xl font-bold mb-4">Sign In</h1>
+//         <form>
+//           <div className="mb-4">
+//             <label className="block text-sm font-medium mb-2" htmlFor="email">
+//               Email
+//             </label>
+//             <input
+//               type="email"
+//               id="email"
+//               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+//               required
+//             />
+//           </div>
+//           <div className="mb-6">
+//             <label
+//               className="block text-sm font-medium mb-2"
+//               htmlFor="password"
+//             >
+//               Password
+//             </label>
+//             <input
+//               type="password"
+//               id="password"
+//               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+//               required
+//             />
+//           </div>
+//           <Button
+//             type="submit"
+//             className="w-full bg-blue-600 text-white hover:bg-blue-700"
+//           >
+//             Sign In
+//           </Button>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default SignIn;

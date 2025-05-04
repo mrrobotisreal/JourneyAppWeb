@@ -70,7 +70,7 @@ const TopNav: React.FC = () => {
                   </NavigationMenuItem>
                   <NavigationMenuItem>
                     <NavigationMenuLink
-                      href="/documentation"
+                      href="/docs"
                       className="px-4 py-2 text-foreground hover:text-blue-semi-dark dark:hover:text-blue-lightest"
                     >
                       Documentation
@@ -137,7 +137,7 @@ const TopNav: React.FC = () => {
               About
             </a>
             <a
-              href="/documentation"
+              href="/docs"
               className="block text-foreground hover:text-blue-semi-dark dark:hover:text-blue-lightest"
             >
               Documentation

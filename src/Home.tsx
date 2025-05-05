@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "./components/ui/button";
+import { Button } from "@/components/ui/button";
 import TopNav from "@/components/top-nav";
 import mainLogo from "@/assets/1024.png";
 

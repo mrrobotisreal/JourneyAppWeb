@@ -9,16 +9,16 @@ export interface Entry {
   userId: string;
   username: string;
   text: string;
-  timestamp: string; // ISO string
+  timestamp: string;
   lastUpdated: string;
   locations: { displayName?: string }[];
   tags: { key: string; value?: string }[];
-  images: string[]; // S3 keys
+  images: string[];
 }
 
 interface Props {
   entry: Entry;
-  query: string; // substring highlight
+  query: string;
 }
 
 /* ------------------------- util date helpers ------------------------ */
@@ -59,13 +59,13 @@ const ResilientImage: React.FC<{ url: string }> = ({ url }) => {
       <img
         src={url}
         alt=""
-        className="h-28 w-28 rounded object-cover shadow"
+        className="h-32 w-32 rounded object-cover shadow"
         onLoad={() => setState("ok")}
         onError={() => setState("error")}
         style={{ display: state === "ok" ? "block" : "none" }}
       />
       {state === "error" && (
-        <div className="h-28 w-28 rounded bg-gray-400 grid place-items-center text-sm text-white">
+        <div className="h-32 w-32 rounded bg-gray-400 grid place-items-center text-sm text-white">
           Err
         </div>
       )}
@@ -84,9 +84,11 @@ const EntryListItem: React.FC<Props> = ({ entry, query }) => {
     (async () => {
       if (!entry.images.length) return;
       setLoadingImgs(true);
-      // TODO replace with your real presign call
       const urls = entry.images.map(
-        (key) => `https://fake-s3/${encodeURIComponent(key)}?signed=fake`
+        (key) =>
+          `https://winapps-myjourney.s3.us-west-2.amazonaws.com/images/${encodeURIComponent(
+            key
+          )}?signed=fake`
       );
       await new Promise((r) => setTimeout(r, 400)); // mock latency
       // eslint-disable-next-line
@@ -111,52 +113,53 @@ const EntryListItem: React.FC<Props> = ({ entry, query }) => {
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* images */}
         {entry.images.length > 0 && (
           <div className="flex gap-2 overflow-x-auto py-2">
-            {loadingImgs && <Skeleton className="h-28 w-28 rounded" />}
+            {loadingImgs && <Skeleton className="h-32 w-32 rounded" />}
             {firstImages.map((u) => (
               <ResilientImage key={u} url={u} />
             ))}
             {entry.images.length > 3 && (
-              <div className="h-28 w-20 grid place-items-center font-semibold bg-blue-700/60 rounded">
+              <div className="h-32 w-20 grid place-items-center font-semibold bg-blue-700/60 rounded">
                 +{entry.images.length - 3}
               </div>
             )}
           </div>
         )}
 
-        {/* text preview */}
         <p className="line-clamp-3 text-sm leading-5">
           {highlight(entry.text, query)}
         </p>
 
-        {/* locations + tags */}
-        <div className="flex flex-wrap gap-4">
-          {entry.locations.slice(0, 3).map((l, i) => (
-            <Badge key={i} variant="secondary" className="gap-1">
-              <MapPin className="h-3 w-3" />
-              {l.displayName ?? "Unknown"}
-            </Badge>
-          ))}
-          {entry.locations.length > 3 && (
-            <Badge variant="secondary">
-              +{entry.locations.length - 3} more
-            </Badge>
-          )}
+        <div className="flex justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            {entry.locations.slice(0, 3).map((l, i) => (
+              <Badge key={i} variant="secondary" className="gap-1">
+                <MapPin className="h-3 w-3" />
+                {l.displayName ?? "Unknown"}
+              </Badge>
+            ))}
+            {entry.locations.length > 3 && (
+              <Badge variant="secondary">
+                +{entry.locations.length - 3} more
+              </Badge>
+            )}
+          </div>
 
-          {entry.tags.slice(0, 3).map((t, i) => (
-            <Badge key={i} variant="outline" className="gap-1 bg-white/20">
-              <Tag className="h-3 w-3" />
-              {t.key}
-              {t.value && <span className="opacity-70">({t.value})</span>}
-            </Badge>
-          ))}
-          {entry.tags.length > 3 && (
-            <Badge variant="outline" className="bg-white/20">
-              +{entry.tags.length - 3} more
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-2 justify-end">
+            {entry.tags.slice(0, 3).map((t, i) => (
+              <Badge key={i} variant="outline" className="gap-1 bg-white/20">
+                <Tag className="h-3 w-3" />
+                {t.key}
+                {t.value && <span className="opacity-70">({t.value})</span>}
+              </Badge>
+            ))}
+            {entry.tags.length > 3 && (
+              <Badge variant="outline" className="bg-white/20">
+                +{entry.tags.length - 3} more
+              </Badge>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

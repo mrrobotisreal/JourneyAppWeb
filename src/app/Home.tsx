@@ -18,6 +18,8 @@ import {
 import { Plus } from "lucide-react";
 import AppTopNav from "@/components/app-top-nav";
 import EntryListItem from "@/components/EntryListItem";
+import { useNavigate } from "react-router";
+import { useAuth } from "@/context/AuthContext";
 
 const demoEntries = Array.from({ length: 25 }, (_, i) => ({
   id: `id-${i}`,
@@ -38,6 +40,9 @@ const demoEntries = Array.from({ length: 25 }, (_, i) => ({
 }));
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <AppTopNav />
@@ -82,6 +87,7 @@ const Home: React.FC = () => {
         <Button
           size="icon"
           className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-lg"
+          onClick={() => navigate(`/app/${user?.uid}/create`)}
         >
           <Plus className="h-6 w-6 text-foreground" />
           <span className="sr-only">New entry</span>

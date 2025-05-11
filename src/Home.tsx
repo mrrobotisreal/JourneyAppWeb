@@ -1,9 +1,28 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TopNav from "@/components/top-nav";
 import mainLogo from "@/assets/1024.png";
+import { useNavigate } from "react-router";
+import { useAuth } from "@/context/AuthContext";
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(`/app/${user.uid}/home`);
+    }
+  }, [user, navigate, loading]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-semi-light"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full">
       <TopNav />

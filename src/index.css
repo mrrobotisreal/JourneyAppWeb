@@ -214,6 +214,33 @@
   min-height: 100vh;
 } */
 
+html {
+  font-family: "Sour_Gummy", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

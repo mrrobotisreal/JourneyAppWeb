@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Moon,
   Sun,
   Menu,
   X,
@@ -8,10 +7,13 @@ import {
   SlidersHorizontal,
   Settings,
 } from "lucide-react";
+import { MoonIcon as Moon } from "@radix-ui/react-icons";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useTheme } from "./theme-provider";
 import mainLogo from "@/assets/1024.png";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const ThemeToggle = () => {
   const { setTheme, theme } = useTheme();
@@ -75,7 +77,9 @@ const AppTopNav: React.FC = () => {
               <span className="sr-only">Settings</span>
             </Button>
             <a
-              href="/signin"
+              onClick={() => {
+                signOut(auth);
+              }}
               className="text-foreground hover:text-blue-semi-dark dark:hover:text-blue-lightest"
             >
               Sign Out

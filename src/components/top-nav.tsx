@@ -1,5 +1,6 @@
 import React from "react";
-import { Moon, Sun, Menu, X } from "lucide-react";
+import { Sun, Menu, X } from "lucide-react";
+import { MoonIcon as Moon } from "@radix-ui/react-icons";
 import { Button } from "./ui/button";
 import {
   NavigationMenu,

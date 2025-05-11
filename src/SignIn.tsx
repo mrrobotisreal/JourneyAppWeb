@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router";
 
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
@@ -36,6 +37,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const SignIn: React.FC = () => {
+  const navigate = useNavigate();
   const [showPwd, setShowPwd] = useState(false);
 
   const form = useForm<FormValues>({
@@ -52,6 +54,7 @@ const SignIn: React.FC = () => {
   const onSubmit = async ({ email, password }: FormValues) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      const user = auth.currentUser;
       toast.success(
         "Successfully signed in! Redirecting to your journal's home page...",
         {
@@ -61,6 +64,9 @@ const SignIn: React.FC = () => {
           },
         }
       );
+      if (user) {
+        navigate(`/app/${user.uid}/home`);
+      }
     } catch (err) {
       toast.error(
         `Error signing in: ${
@@ -167,7 +173,11 @@ const SignIn: React.FC = () => {
               onClick={async () => {
                 try {
                   await signInWithPopup(auth, googleProvider);
+                  const user = auth.currentUser;
                   toast.success("Signed in with Google!");
+                  if (user) {
+                    navigate(`/app/${user.uid}/home`);
+                  }
                 } catch (e) {
                   // eslint-disable-next-line
                   // @ts-ignore

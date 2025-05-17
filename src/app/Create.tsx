@@ -63,6 +63,17 @@ const COLOR_PALETTE = [
   "#ff0080",
 ];
 
+const FONT_FAMILIES = [
+  "Advent_Pro",
+  "DM_Sans",
+  "Grandstander",
+  "Josefin_Slab",
+  "Saira",
+  "Shantell_Sans",
+  "Sour_Gummy",
+  "Texturina",
+];
+
 function htmlToCustomMarkup(html: string): string {
   function processNode(node: Node): string {
     if (node.nodeType === Node.TEXT_NODE) {
@@ -202,8 +213,13 @@ const Create: React.FC = () => {
   const [textColor, setTextColor] = useState<string | null>(null);
   const [highlightColor, setHighlightColor] = useState<string | null>(null);
   const [colorPopoverOpen, setColorPopoverOpen] = useState(false);
+  const [fontPopoverOpen, setFontPopoverOpen] = useState(false);
+  const [selectedFont, setSelectedFont] = useState("Sour_Gummy");
+  const [hoveredFont, setHoveredFont] = useState<string | null>(null);
   const colorPopoverRef = useRef<HTMLDivElement | null>(null);
   const colorButtonRef = useRef<HTMLButtonElement | null>(null);
+  const fontPopoverRef = useRef<HTMLDivElement | null>(null);
+  const fontButtonRef = useRef<HTMLButtonElement | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [isEditorFocused, setIsEditorFocused] = useState(false);
 
@@ -220,6 +236,8 @@ const Create: React.FC = () => {
           e.preventDefault();
           if (lower === "highlight/color") {
             setColorPopoverOpen((open) => !open);
+          } else if (lower === "font family") {
+            setFontPopoverOpen((open) => !open);
           } else {
             toggleFormat(lower);
           }
@@ -248,6 +266,24 @@ const Create: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [colorPopoverOpen]);
+
+  useEffect(() => {
+    if (!fontPopoverOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      const popover = fontPopoverRef.current;
+      const button = fontButtonRef.current;
+      if (
+        popover &&
+        !popover.contains(e.target as Node) &&
+        button &&
+        !button.contains(e.target as Node)
+      ) {
+        setFontPopoverOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [fontPopoverOpen]);
 
   function renderColorGrid(
     selectedColor: string | null,
@@ -312,6 +348,20 @@ const Create: React.FC = () => {
     if (formatState.strikethrough) styles.push("strikethrough");
     if (formatState.underline) styles.push("underline");
 
+    // Check if the selection is inside a code element
+    const selection = document.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const parentElement = range.commonAncestorContainer.parentElement;
+      if (
+        parentElement &&
+        (parentElement.classList.contains("code-format") ||
+          parentElement.closest(".code-format"))
+      ) {
+        styles.push("code");
+      }
+    }
+
     setTextColor(colorState.textColor);
     setHighlightColor(colorState.highlightColor);
 
@@ -327,6 +377,7 @@ const Create: React.FC = () => {
           "strikethrough",
           "underline",
           "highlight/color",
+          "code",
         ].includes(style)
     );
 
@@ -336,6 +387,77 @@ const Create: React.FC = () => {
   function toggleFormat(style: string) {
     if (!editorRef.current) return;
     editorRef.current.focus();
+
+    let selection, range, parentElement;
+
+    if (style === "code") {
+      // Get current selection
+      selection = document.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      // Get selection range and parent element
+      range = selection.getRangeAt(0);
+      parentElement = range.commonAncestorContainer.parentElement;
+
+      // Check if we're inside a code span and should remove it
+      if (
+        parentElement &&
+        (parentElement.classList.contains("code-format") ||
+          parentElement.closest(".code-format"))
+      ) {
+        // We're inside a code block, so remove the formatting
+        const codeSpan = parentElement.classList.contains("code-format")
+          ? parentElement
+          : parentElement.closest(".code-format");
+
+        if (codeSpan) {
+          // Extract the text content
+          const textContent = codeSpan.textContent;
+          const newTextNode = document.createTextNode(textContent || "");
+
+          // Replace the code span with the text
+          codeSpan.parentNode?.replaceChild(newTextNode, codeSpan);
+
+          // Update active styles
+          const codeIndex = activeTextStyles.indexOf("code");
+          if (codeIndex !== -1) {
+            const newStyles = [...activeTextStyles];
+            newStyles.splice(codeIndex, 1);
+            setActiveTextStyles(newStyles);
+          }
+        }
+      } else {
+        // Apply code formatting
+        // Create a span with the appropriate styling
+        const codeSpan = document.createElement("span");
+        codeSpan.className = "code-format";
+        codeSpan.style.fontFamily = "monospace";
+        codeSpan.style.backgroundColor = "var(--secondary)";
+        codeSpan.style.color = "var(--secondary-foreground)";
+        codeSpan.style.padding = "0.1em 0.4em";
+        codeSpan.style.borderRadius = "3px";
+
+        // Apply the span to the selection
+        const selectedContent = range.extractContents();
+        codeSpan.appendChild(selectedContent);
+        range.insertNode(codeSpan);
+
+        // Set the selection after the inserted node
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(codeSpan);
+        newRange.collapse(false); // Collapse to end
+        selection.addRange(newRange);
+
+        // Add to active styles if not already there
+        if (!activeTextStyles.includes("code")) {
+          setActiveTextStyles([...activeTextStyles, "code"]);
+        }
+      }
+
+      setTimeout(updateActiveStyles, 0);
+      return;
+    }
 
     switch (style) {
       case "bold":
@@ -349,9 +471,6 @@ const Create: React.FC = () => {
         break;
       case "underline":
         document.execCommand("underline", false);
-        break;
-      case "code":
-        document.execCommand("formatBlock", false, "pre");
         break;
     }
 
@@ -418,7 +537,7 @@ const Create: React.FC = () => {
         document.execCommand("underline");
         break;
       case "code":
-        document.execCommand("formatBlock", false, "pre");
+        toggleFormat("code");
         break;
       case "highlight/color":
         if (highlightColor) {
@@ -438,6 +557,31 @@ const Create: React.FC = () => {
     }
     // eslint-disable-next-line
   }, [textColor, highlightColor, colorPopoverOpen]);
+
+  function applyFont(fontFamily: string) {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+
+    // Save the current selection
+    const selection = document.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      // No selection, apply to entire editor
+      editorRef.current.style.fontFamily = fontFamily;
+      setSelectedFont(fontFamily);
+      return;
+    }
+
+    // Check if there's a selection or we should apply to the entire editor
+    if (selection.toString().trim() === "") {
+      // No text selected, apply to entire editor
+      editorRef.current.style.fontFamily = fontFamily;
+    } else {
+      // Text selected, apply font to selection
+      document.execCommand("fontName", false, fontFamily);
+    }
+
+    setSelectedFont(fontFamily);
+  }
 
   // TODO: Add this to the save button
   // const html = editorRef.current?.innerHTML || "";
@@ -469,6 +613,7 @@ const Create: React.FC = () => {
                   boxShadow: "none",
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
+                  fontFamily: selectedFont,
                 }}
                 onInput={() => {
                   updateActiveStyles();
@@ -518,6 +663,41 @@ const Create: React.FC = () => {
                                 className={
                                   "transition-colors " +
                                   (colorPopoverOpen ? "text-blue-600" : "")
+                                }
+                              />
+                            </ToggleGroupItem>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            {label}{" "}
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {shortcut}
+                            </span>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+                    // Special handling for TypeIcon (font family)
+                    if (label === "Font Family") {
+                      return (
+                        <Tooltip key={label} delayDuration={200}>
+                          <TooltipTrigger asChild>
+                            <ToggleGroupItem
+                              value={label.toLowerCase()}
+                              aria-label={label}
+                              className={
+                                fontPopoverOpen
+                                  ? "ring-2 ring-blue-500 bg-blue-50"
+                                  : ""
+                              }
+                              onClick={() =>
+                                setFontPopoverOpen((open) => !open)
+                              }
+                              ref={fontButtonRef}
+                            >
+                              <Icon
+                                className={
+                                  "transition-colors " +
+                                  (fontPopoverOpen ? "text-blue-600" : "")
                                 }
                               />
                             </ToggleGroupItem>
@@ -583,6 +763,78 @@ const Create: React.FC = () => {
                         Highlight
                       </div>
                       {renderColorGrid(highlightColor, "highlight")}
+                    </div>
+                  </div>
+                )}
+                {/* Font Popover */}
+                {fontPopoverOpen && (
+                  <div
+                    ref={fontPopoverRef}
+                    className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 bg-white dark:bg-gray-800 border rounded shadow-lg p-4"
+                    style={{ minWidth: 320 }}
+                  >
+                    <div className="mb-4">
+                      <div className="font-semibold mb-2 text-sm">
+                        Current Font
+                      </div>
+                      <div
+                        className="flex flex-col border rounded p-3 mb-3"
+                        style={{ fontFamily: hoveredFont || selectedFont }}
+                      >
+                        <span>
+                          Normal{" "}
+                          {(hoveredFont || selectedFont).replace(
+                            /[_-]/g,
+                            " "
+                          ) ||
+                            hoveredFont ||
+                            selectedFont}
+                        </span>
+                        <span style={{ fontWeight: "bold" }}>
+                          Bold{" "}
+                          {(hoveredFont || selectedFont).replace(
+                            /[_-]/g,
+                            " "
+                          ) ||
+                            hoveredFont ||
+                            selectedFont}
+                        </span>
+                        <span style={{ fontStyle: "italic" }}>
+                          Italic{" "}
+                          {(hoveredFont || selectedFont).replace(
+                            /[_-]/g,
+                            " "
+                          ) ||
+                            hoveredFont ||
+                            selectedFont}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {FONT_FAMILIES.map((fontFamily) => {
+                          const label =
+                            fontFamily.replace(/[_-]/g, " ") || fontFamily;
+                          return (
+                            <button
+                              key={fontFamily}
+                              type="button"
+                              className={`p-2 text-left border rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                                selectedFont === fontFamily
+                                  ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900"
+                                  : ""
+                              }`}
+                              style={{ fontFamily }}
+                              onClick={() => {
+                                applyFont(fontFamily);
+                                setFontPopoverOpen(false);
+                              }}
+                              onMouseEnter={() => setHoveredFont(fontFamily)}
+                              onMouseLeave={() => setHoveredFont(null)}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
